@@ -7,8 +7,8 @@ use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 
 use std::borrow::Cow;
-use std::fs;
 use std::path::PathBuf;
+use std::{env, fs};
 use time::{format_description, OffsetDateTime};
 
 #[derive(Deserialize, Serialize)]
@@ -57,7 +57,7 @@ fn handle_embedded_file(path: &str) -> Option<HttpResponse> {
 
 #[get("/{_:.*}")]
 async fn handle(path: web::Path<String>) -> impl Responder {
-    if let Some(res) = handle_embedded_file(&path.path()) {
+    if let Some(res) = handle_embedded_file(path.path()) {
         res
     } else {
         handle_embedded_file("200.html").unwrap()
@@ -95,17 +95,17 @@ async fn download(path: web::Path<String>) -> impl Responder {
         if !dir.display().to_string().starts_with(&*DIRECTORY_PATH) {
             return HttpResponse::BadRequest()
                 .content_type("application/json")
-                .body(format!(r#"{{"error":"Invalid file"}}"#));
+                .body(r#"{"error":"Invalid file"}"#.to_string());
         }
     } else {
         return HttpResponse::BadRequest()
             .content_type("application/json")
-            .body(format!(r#"{{"error":"Could not find file"}}"#));
+            .body(r#"{"error":"Could not find file"}"#.to_string());
     }
     if dir.is_dir() {
         return HttpResponse::BadRequest()
             .content_type("application/json")
-            .body(format!(r#"{{"error":"Could not find file"}}"#));
+            .body(r#"{"error":"Could not find file"}"#.to_string());
     }
     let file = fs::read(&dir).expect("Something seriously went wrong");
 
@@ -123,17 +123,17 @@ async fn list(path: web::Query<PathQuery>) -> impl Responder {
         if !dir.display().to_string().starts_with(&*DIRECTORY_PATH) {
             return HttpResponse::BadRequest()
                 .content_type("application/json")
-                .body(format!(r#"{{"error":"Invalid directory"}}"#));
+                .body(r#"{"error":"Invalid directory"}"#.to_string());
         }
     } else {
         return HttpResponse::BadRequest()
             .content_type("application/json")
-            .body(format!(r#"{{"error":"Could not find directory"}}"#));
+            .body(r#"{"error":"Could not find directory"}"#.to_string());
     }
     if dir.is_file() {
         return HttpResponse::BadRequest()
             .content_type("application/json")
-            .body(format!(r#"{{"error":"Could not find directory"}}"#));
+            .body(r#"{"error":"Could not find directory"}"#.to_string());
     }
     let files = fs::read_dir(dir).expect("Something seriously went wrong");
 
@@ -167,7 +167,9 @@ async fn main() -> std::io::Result<()> {
     let url = format!(
         "{}:{}",
         &*CONFIG.host.clone().unwrap_or("127.0.0.1".to_owned()),
-        CONFIG.port.unwrap_or(404)
+        env::var("PORT")
+            .map(|x| x.parse::<i32>().unwrap())
+            .unwrap_or(CONFIG.port.unwrap_or(404))
     );
     println!("Darkvault started at: http://{}", url);
     HttpServer::new(|| {
