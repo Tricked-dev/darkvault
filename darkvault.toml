@@ -1,5 +1,5 @@
-directory = ".."   # Directory to be hosted this can be either be a relative path or a direct path
+directory = "."   # Directory to be hosted this can be either be a relative path or a direct path
 name = "DarkVault" # How the website should be branded
 theme = "dark"     # Supported themes are: https://daisyui.com/docs/default-themes
 port = 4004        # Port for the server to be hosted on
-host = "localhost" # 0.0.0.0 or 1237.0.0.1
+host = "0.0.0.0" # localhost, 0.0.0.0 or 1237.0.0.1
