@@ -1,0 +1,47 @@
+[package]
+name = "darkvault"
+version = "0.1.0"
+edition = "2021"
+description = "Darkvault is a beautiful file server written with rust & sveltekit!, it uses daisy ui for the ui and the theme can be customized"
+authors = ["Tricked-dev"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/Tricked-dev/darkvault"
+# homepage = "https://tricked.pro/darkvault"
+
+[profile.release]
+codegen-units = 1
+lto = true
+
+
+[package.metadata.deb]
+maintainer = "Tricked-dev"
+copyright = "2021, Tricked-dev"
+license-file = ["LICENSE", "4"]
+extended-description = """https://github.com/Tricked-dev/darkvault"""
+depends = "$auto"
+section = "utility"
+priority = "optional"
+assets = [
+    [
+        "target/release/darkvault",
+        "usr/bin/",
+        "755",
+    ],
+    [
+        "README.md",
+        "usr/share/doc/darkvault/README",
+        "644",
+    ],
+]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.0.0-rc.2"
+lazy_static = "1.4.0"
+mime_guess = "2.0.3"
+rust-embed = "6.3.0"
+serde = { version = "1.0.136", features = ["derive"] }
+serde_json = "1.0.78"
+toml = "0.5.8"
+time = { version = "0.3.7", features = ["formatting"] }
