@@ -11,11 +11,18 @@ Download darkvault from the [releases](https://github.com/Tricked-dev/darkvault/
 create a `darkvault.toml` file and then add the following entries
 
 ```toml
-directory = ".."   # Directory to be hosted this can be either be a relative path or a direct path
+directory = "." # Directory to be hosted this can be either be a relative path or a direct path
 name = "DarkVault" # How the website should be branded
-theme = "dark"     # Supported themes are: https://daisyui.com/docs/default-themes
-port = 4004        # Port for the server to be hosted on
-host = "localhost" # 0.0.0.0 or 1237.0.0.1
+theme = "dark" # Supported themes are: https://daisyui.com/docs/default-themes
+port = 4004 # Port for the server to be hosted on
+host = "0.0.0.0" # localhost, 0.0.0.0 or 127.0.0.1
+description = """
+Example download list for darkvault this website is used for previews
+""" # Description this will be put in the meta when javascript is loaded
+urls = [ # Links are bunch of links displayed next to the file listing these can be external or internal links for example link to a folder thats important or to your github
+    { to = "https://github.com/Tricked-dev/darkvault", name = "Github", icon = "GithubIcon" },
+]  # All compatible icons can be found here https://vue-feather-icons.egoist.sh/
+
 ```
 
 Then just run darkvault from the directory the darkvault.toml file is and a http server should start!

@@ -9,10 +9,7 @@
 		);
 
 		let data = response.ok && (await response.json());
-		document.documentElement.setAttribute(
-			'data-theme',
-			response.headers.get('X-vault-theme') || 'light'
-		);
+		document.documentElement.setAttribute('data-theme', response.headers.get('X-vault-theme'));
 
 		return {
 			status: response.status,

@@ -14,17 +14,34 @@ use time::{format_description, OffsetDateTime};
 #[derive(Deserialize, Serialize)]
 struct Config {
     directory: PathBuf,
-    name: String,
-    theme: Option<String>,
     port: Option<i32>,
     host: Option<String>,
+    #[serde(flatten)]
+    /// Basically makes it so serde merges these, this allows for cleaner code see [`handle`]
+    meta: Meta,
+}
+#[derive(Deserialize, Serialize)]
+
+struct Meta {
+    name: String,
+    theme: Option<String>,
+    urls: Vec<Url>,
+    description: String,
+}
+
+#[derive(Deserialize, Serialize)]
+
+struct Url {
+    to: String,
+    name: String,
+    icon: Option<String>,
 }
 
 lazy_static! {
     static ref CONFIG: Config = {
         let data = std::fs::read_to_string("darkvault.toml")
             .expect("Create a darkvault.toml with the config values! to get it to work!");
-        toml::from_str(&data).unwrap()
+        toml::from_str(&data).expect("Config structure is invalid please look at the readme")
     };
     static ref DIRECTORY_PATH: String = {
         let dir = CONFIG.directory.clone();
@@ -57,7 +74,11 @@ fn handle_embedded_file(path: &str) -> Option<HttpResponse> {
 
 #[get("/{_:.*}")]
 async fn handle(path: web::Path<String>) -> impl Responder {
-    if let Some(res) = handle_embedded_file(path.path()) {
+    if path.path() == "meta.json" {
+        HttpResponse::BadRequest()
+            .content_type("application/json")
+            .body(serde_json::to_string(&CONFIG.meta).unwrap())
+    } else if let Some(res) = handle_embedded_file(path.path()) {
         res
     } else {
         handle_embedded_file("200.html").unwrap()
@@ -178,9 +199,9 @@ async fn main() -> std::io::Result<()> {
                 middleware::DefaultHeaders::new()
                     .add((
                         "X-vault-theme",
-                        &*CONFIG.theme.clone().unwrap_or("light".to_owned()),
+                        &*CONFIG.meta.theme.clone().unwrap_or("light".to_owned()),
                     ))
-                    .add(("X-vault-name", &*CONFIG.name)),
+                    .add(("X-vault-name", &*CONFIG.meta.name)),
             )
             .service(web::scope("/api").service(list).service(download))
             .service(handle)
