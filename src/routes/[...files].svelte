@@ -1,7 +1,5 @@
 <script context="module">
 	import FileLayout from '$lib/components/FileLayout.svelte';
-	export const router = false;
-	export const hydrate = false;
 	/** @type {import('@sveltejs/kit').Load} */
 	export async function load({ params, fetch, session, stuff }) {
 		const response = await fetch(
