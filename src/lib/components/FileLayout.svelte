@@ -12,23 +12,23 @@
 	import { formatByteSize } from '@theredhead/formatbytesize';
 	import { onMount } from 'svelte';
 	import { metaStore } from '$lib/metastore';
-
+	import { page } from '$app/stores';
 	export let data: any[];
 	export let name: string | undefined;
 
-	let here = location.href.split('/').slice(3);
-	let parts = [{ text: name || 'Index', link: '/' }];
+	$: here = $page.url.toString().split('/').slice(3);
+	$: parts = here && [{ text: name || 'Index', link: '/' }];
 
 	let readme;
 	let readmeFile;
 
 	$: found = data;
-	$: path = data && window.location.pathname;
 	$: for (let i = 0; i < here.length; i++) {
 		const part = here[i];
 		const text = decodeURIComponent(part).split('.')[0];
 		const link = '/' + here.slice(0, i + 1).join('/');
 		parts.push({ text: text, link: link });
+		console.log(parts);
 	}
 	$: {
 		(async () => {
@@ -177,9 +177,9 @@
 					</tr>
 				{/each}
 			</table>
-			{#if path !== '/'}
+			{#if $page.url.pathname !== '/'}
 				<a
-					href={parts.at(-2).link}
+					href={parts?.at?.(-2)?.link}
 					class="flex gap-2 py-2 hover:bg-accent-focus rounded-md duration-75"
 				>
 					<CornerDownLeftIcon size={'24'} />

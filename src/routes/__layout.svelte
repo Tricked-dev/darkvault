@@ -3,7 +3,8 @@
 	import { onMount } from 'svelte';
 	import SvelteSeo from 'svelte-seo';
 
-	import '../app.css';
+	import 'virtual:windi.css';
+
 	let title, description;
 	async function getMeta() {
 		let meta;
