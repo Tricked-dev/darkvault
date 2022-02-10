@@ -8,12 +8,15 @@
 
 		let data = response.ok && (await response.json());
 		document.documentElement.setAttribute('data-theme', response.headers.get('X-vault-theme'));
-
+		if (!data)
+			return {
+				status: 404
+			};
 		return {
 			status: response.status,
 			props: {
 				name: response.headers.get('X-vault-name'),
-				data: data?.sort((x) => !x.directory)
+				data: data?.sort?.((x) => !x.directory)
 			}
 		};
 	}
