@@ -16,6 +16,7 @@ struct Config {
     directory: PathBuf,
     port: Option<i32>,
     host: Option<String>,
+    hidedotfiles: Option<bool>,
     #[serde(flatten)]
     /// Basically makes it so serde merges these, this allows for cleaner code see [`handle`]
     meta: Meta,
@@ -78,6 +79,10 @@ async fn handle(path: web::Path<String>) -> impl Responder {
         HttpResponse::BadRequest()
             .content_type("application/json")
             .body(serde_json::to_string(&CONFIG.meta).unwrap())
+    } else if let Ok(file) = get_file(path.path().to_owned()) {
+        HttpResponse::Ok()
+            .content_type(from_path(&path.path()).first_or_octet_stream().as_ref())
+            .body(file)
     } else if let Some(res) = handle_embedded_file(path.path()) {
         res
     } else {
@@ -109,78 +114,130 @@ struct DarkFile {
 #[get("/download/{_:.*}")]
 //TODO ADD TORRENT DOWNLOAD
 async fn download(path: web::Path<String>) -> impl Responder {
+    let file = get_file(path.path().to_owned());
+    match file {
+        Ok(file) => HttpResponse::Ok()
+            .content_type("application/content-stream")
+            .body(file),
+        Err(e) => e,
+    }
+}
+
+fn validate_dir(path: String) -> Result<PathBuf, HttpResponse> {
     let mut dir = CONFIG.directory.clone();
 
-    dir.push(&path.path());
+    dir.push(path);
     if let Ok(dir) = dir.canonicalize() {
-        if !dir.display().to_string().starts_with(&*DIRECTORY_PATH) {
-            return HttpResponse::BadRequest()
+        let display = dir.display().to_string();
+
+        if CONFIG.hidedotfiles.unwrap_or(false) {
+            for dir in &display
+                .replace(&*DIRECTORY_PATH, "")
+                .split("/")
+                .collect::<Vec<&str>>()
+            {
+                if dir.starts_with('.') {
+                    return Err(HttpResponse::BadRequest()
+                        .content_type("application/json")
+                        .body(r#"{"error":"Could not find file"}"#.to_string()));
+                }
+            }
+        }
+
+        if !display.starts_with(&*DIRECTORY_PATH) {
+            return Err(HttpResponse::BadRequest()
                 .content_type("application/json")
-                .body(r#"{"error":"Invalid file"}"#.to_string());
+                .body(r#"{"error":"Invalid file"}"#.to_string()));
         }
     } else {
-        return HttpResponse::BadRequest()
+        return Err(HttpResponse::BadRequest()
             .content_type("application/json")
-            .body(r#"{"error":"Could not find file"}"#.to_string());
+            .body(r#"{"error":"Could not find file"}"#.to_string()));
     }
-    if dir.is_dir() {
-        return HttpResponse::BadRequest()
-            .content_type("application/json")
-            .body(r#"{"error":"Could not find file"}"#.to_string());
-    }
-    let file = fs::read(&dir).expect("Something seriously went wrong");
+    Ok(dir)
+}
 
-    HttpResponse::Ok()
-        .content_type("application/content-stream")
-        .body(file)
+fn get_file(path: String) -> Result<Vec<u8>, HttpResponse> {
+    let dir = validate_dir(path.path().to_owned());
+    match dir {
+        Ok(dir) => {
+            if dir.is_dir() {
+                return Err(HttpResponse::BadRequest()
+                    .content_type("application/json")
+                    .body(r#"{"error":"Could not find file"}"#.to_string()));
+            }
+            Ok(fs::read(&dir).expect("Something seriously went wrong"))
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn get_dir(path: String) -> Result<Vec<DarkFile>, HttpResponse> {
+    let dir = validate_dir(path.path().to_owned());
+    match dir {
+        Ok(dir) => {
+            if dir.is_file() {
+                return Err(HttpResponse::BadRequest()
+                    .content_type("application/json")
+                    .body(r#"{"error":"Could not find file"}"#.to_string()));
+            }
+            let files = fs::read_dir(dir).expect("Something seriously went wrong");
+
+            let data = files
+                .filter(|x| {
+                    if CONFIG.hidedotfiles.unwrap_or(false) {
+                        if let Ok(k) = x {
+                            let display = k.path().canonicalize().unwrap().display().to_string();
+                            if CONFIG.hidedotfiles.unwrap_or(false) {
+                                for dir in &display
+                                    .replace(&*DIRECTORY_PATH, "")
+                                    .split("/")
+                                    .collect::<Vec<&str>>()
+                                {
+                                    if dir.starts_with('.') {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return true;
+                })
+                .map(|x| {
+                    let file = x.unwrap().path();
+                    let meta = fs::metadata(&file).unwrap();
+                    DarkFile {
+                        path: file
+                            .canonicalize()
+                            .unwrap()
+                            .display()
+                            .to_string()
+                            .replace(&format!("{}/", *DIRECTORY_PATH), ""),
+                        directory: file.is_dir(),
+                        modified: meta.modified().ok().map(|x| {
+                            systemtime_strftime(x, "[year]-[month]-[day] [hour]:[minute]:[second]")
+                        }),
+                        size: Some(meta.len()),
+                    }
+                })
+                .collect::<Vec<DarkFile>>();
+
+            Ok(data)
+        }
+        Err(e) => Err(e),
+    }
 }
 
 #[get("/list")]
 async fn list(path: web::Query<PathQuery>) -> impl Responder {
-    let mut dir = CONFIG.directory.clone();
+    let data = get_dir(path.path.to_owned());
 
-    dir.push(&path.path);
-    if let Ok(dir) = dir.canonicalize() {
-        if !dir.display().to_string().starts_with(&*DIRECTORY_PATH) {
-            return HttpResponse::BadRequest()
-                .content_type("application/json")
-                .body(r#"{"error":"Invalid directory"}"#.to_string());
-        }
-    } else {
-        return HttpResponse::BadRequest()
+    match data {
+        Ok(data) => HttpResponse::Ok()
             .content_type("application/json")
-            .body(r#"{"error":"Could not find directory"}"#.to_string());
+            .body(serde_json::to_string(&data).unwrap()),
+        Err(e) => e,
     }
-    if dir.is_file() {
-        return HttpResponse::BadRequest()
-            .content_type("application/json")
-            .body(r#"{"error":"Could not find directory"}"#.to_string());
-    }
-    let files = fs::read_dir(dir).expect("Something seriously went wrong");
-
-    let data = files
-        .map(|x| {
-            let file = x.unwrap().path();
-            let meta = fs::metadata(&file).unwrap();
-            DarkFile {
-                path: file
-                    .canonicalize()
-                    .unwrap()
-                    .display()
-                    .to_string()
-                    .replace(&format!("{}/", *DIRECTORY_PATH), ""),
-                directory: file.is_dir(),
-                modified: meta.modified().ok().map(|x| {
-                    systemtime_strftime(x, "[year]-[month]-[day] [hour]:[minute]:[second]")
-                }),
-                size: Some(meta.len()),
-            }
-        })
-        .collect::<Vec<DarkFile>>();
-
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(serde_json::to_string(&data).unwrap())
 }
 
 #[actix_web::main]

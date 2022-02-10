@@ -3,6 +3,7 @@ name = "DarkVault" # How the website should be branded
 theme = "dark" # Supported themes are: https://daisyui.com/docs/default-themes
 port = 4004 # Port for the server to be hosted on
 host = "0.0.0.0" # localhost, 0.0.0.0 or 127.0.0.1
+hidedotfiles = false # Hides dotfiles aka paths that start with . or files that start with . these files/folders will not be able to be downloaded/accessed
 description = """ 
 Example download list for darkvault this website is used for previews
 """ # Description this will be put in the meta when javascript is loaded

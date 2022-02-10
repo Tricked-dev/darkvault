@@ -16,13 +16,13 @@ name = "DarkVault" # How the website should be branded
 theme = "dark" # Supported themes are: https://daisyui.com/docs/default-themes
 port = 4004 # Port for the server to be hosted on
 host = "0.0.0.0" # localhost, 0.0.0.0 or 127.0.0.1
+hidedotfiles = false # Hides dotfiles aka paths that start with . or files that start with . these files/folders will not be able to be downloaded/accessed
 description = """
 Example download list for darkvault this website is used for previews
 """ # Description this will be put in the meta when javascript is loaded
-urls = [ # Links are bunch of links displayed next to the file listing these can be external or internal links for example link to a folder thats important or to your github
+urls = [
     { to = "https://github.com/Tricked-dev/darkvault", name = "Github", icon = "GithubIcon" },
-]  # All compatible icons can be found here https://vue-feather-icons.egoist.sh/
-
+] # All compatible icons can be found here https://vue-feather-icons.egoist.sh/
 ```
 
 Then just run darkvault from the directory the darkvault.toml file is and a http server should start!

@@ -37,7 +37,7 @@
 			);
 			if (!readmeFile) return;
 			let file = await fetch(
-				`${import.meta.env['VITE_SERVER_URL'] || ''}/api/download/${readmeFile?.path}`
+				`${import.meta.env['VITE_SERVER_URL'] || ''}/${readmeFile?.path}`
 			).then((r) => r.text());
 
 			readme = file;
@@ -49,9 +49,9 @@
 			(x) => x?.path?.split('/').at(-1).toLowerCase().split('.')[0] == 'readme'
 		);
 		if (!readmeFile) return;
-		let file = await fetch(
-			`${import.meta.env['VITE_SERVER_URL'] || ''}/api/download/${readmeFile?.path}`
-		).then((r) => r.text());
+		let file = await fetch(`${import.meta.env['VITE_SERVER_URL'] || ''}/${readmeFile?.path}`).then(
+			(r) => r.text()
+		);
 
 		readme = file;
 	});
@@ -158,7 +158,7 @@
 							<a
 								href={path.directory
 									? `/${path.path}`
-									: `${import.meta.env['VITE_SERVER_URL'] || ''}/api/download/${path.path}`}
+									: `${import.meta.env['VITE_SERVER_URL'] || ''}/${path.path}`}
 								download={path.directory ? undefined : path.path.split('/').at(-1)}
 								class="text-lg truncate text-info hover:text-primary-focus"
 								>{path.path.split('/').at(-1)}</a

@@ -37,9 +37,11 @@
 				class="link">report your issue</a
 			>
 		</p>
-		<details>
-			<summary>Error stack</summary>
-			<pre><code>{stack}</code></pre>
-		</details>
+		{#if stack}
+			<details>
+				<summary>Error stack</summary>
+				<pre><code>{stack}</code></pre>
+			</details>
+		{/if}
 	{/if}
 </div>
